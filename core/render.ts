@@ -15,8 +15,16 @@ export async function render(
   node: JsxChild,
   ctx: RenderCtx
 ): Promise<RenderResult> {
+  //nothing
   if (node == null) {
     return { el: ctx.parent };
+  }
+
+  //fragement recursive
+  if (Array.isArray(node)) {
+    for (const item of node) {
+      return await render(item, ctx);
+    }
   }
 
   // TEXT NODE
@@ -58,7 +66,8 @@ export async function render(
   }
 
   // HOST NODE
-  const el = await renderHost(node as JsxNode, ctx);
+
+  const el = renderHost(node as JsxNode, ctx);
 
   const childCtx: RenderCtx = {
     ...ctx,

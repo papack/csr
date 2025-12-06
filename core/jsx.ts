@@ -22,7 +22,7 @@ export interface JsxSignal {
 }
 
 export interface JsxNode {
-  kind: "host" | "component" | "signal" | "effect";
+  kind: "host" | "component" | "signal";
   tag: string | ComponentFn;
   props: any;
   children: JsxChild[];

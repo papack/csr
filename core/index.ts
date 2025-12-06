@@ -1,5 +1,6 @@
 export * from "./destroy";
 export * from "./effect";
+export * from "./fragment";
 export * from "./jsx";
 export * from "./mount";
 export * from "./render";
