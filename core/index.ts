@@ -1,4 +1,3 @@
-export * from "./connector";
 export * from "./destroy";
 export * from "./effect";
 export * from "./jsx";
