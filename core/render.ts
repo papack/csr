@@ -1,4 +1,4 @@
-import type { ComponentFn, JsxNode, JsxChild, JsxText } from "./jsx";
+import type { ComponentFn, JsxNode, JsxChild, JsxText, JsxSignal } from "./jsx";
 import { beginComponentMountSession, endComponentMountSession } from "./mount";
 
 export interface RenderCtx {
@@ -22,6 +22,12 @@ export async function render(
   // TEXT NODE
   if (node.kind === "text") {
     const el = renderText(node as JsxText, ctx);
+    return { el };
+  }
+
+  //SIGNAL
+  if (node.kind === "signal") {
+    const el = await renderSignal(node as JsxSignal, ctx);
     return { el };
   }
 
@@ -113,4 +119,27 @@ function renderText(node: JsxText, ctx: RenderCtx): Text {
   const t = document.createTextNode(node.value);
   ctx.parent.appendChild(t);
   return t;
+}
+
+// ---------------------------------------------------------
+// SIGNAL Renderer
+// ---------------------------------------------------------
+
+async function renderSignal(node: JsxSignal, ctx: RenderCtx): Promise<Text> {
+  const t = document.createTextNode("");
+  ctx.parent.appendChild(t);
+
+  await node.value(async (v: any) => {
+    changeText(t, String(v));
+  });
+
+  return t;
+}
+
+function changeText(el: Text, value: string | number) {
+  if (el instanceof Text) {
+    el.nodeValue = String(value);
+  } else {
+    throw "svg not implemented with number and string";
+  }
 }

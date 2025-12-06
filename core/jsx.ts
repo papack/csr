@@ -9,19 +9,24 @@ declare global {
   }
 }
 
+export type JsxChild = JsxNode | JsxText | JsxSignal;
+
 export interface JsxText {
   kind: "text";
   value: string;
 }
 
+export interface JsxSignal {
+  kind: "signal";
+  value: any;
+}
+
 export interface JsxNode {
-  kind: "host" | "component";
+  kind: "host" | "component" | "signal" | "effect";
   tag: string | ComponentFn;
   props: any;
   children: JsxChild[];
 }
-
-export type JsxChild = JsxNode | JsxText;
 
 export type ComponentFn = (
   props: any,
@@ -46,6 +51,10 @@ export function jsx(
 
 function normalizeChild(input: any): JsxChild | JsxChild[] {
   if (input == null || input === false || input === true) return [];
+
+  if (typeof input === "function" && input?.type === "signal") {
+    return { kind: "signal", value: input };
+  }
 
   if (typeof input === "string" || typeof input === "number") {
     return { kind: "text", value: String(input) };
