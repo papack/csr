@@ -1,4 +1,4 @@
-import { effect, jsx, render } from "../core";
+import { effect, jsx, render, Show } from "../core";
 import { signal } from "../core/signal";
 
 // Einstiegspunkt
@@ -17,6 +17,15 @@ async function App() {
 
 async function Layer1() {
   const [count, setCount] = signal(0);
+  const [show, setShow] = signal<boolean>(false);
+
+  effect(count, (n) => {
+    if (n % 2 === 0) {
+      setShow(() => true);
+    } else {
+      setShow(() => false);
+    }
+  });
 
   return (
     <div style={{ padding: "8px", border: "2px solid blue" }}>
@@ -28,6 +37,7 @@ async function Layer1() {
         }}
       >
         {count}
+        <Show when={show}> Hi!</Show>
       </button>
     </div>
   );

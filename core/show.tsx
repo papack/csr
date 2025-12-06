@@ -3,8 +3,13 @@ import { destroy } from "./destroy";
 import { render } from "./render";
 import { mount } from "./mount";
 import { unmount } from "./unmount";
+import type { ReadFn } from "./signal";
+import { effect } from "./effect";
 
-export async function Show(p: any, children: any) {
+interface ShowPropsInterface {
+  when: ReadFn<boolean>;
+}
+export async function Show(p: ShowPropsInterface, children: any) {
   // Stabiler Host-Knoten (NICHT neu erzeugen)
   const host = jsx("csr-show-host", { style: { display: "contents" } });
 
@@ -17,7 +22,6 @@ export async function Show(p: any, children: any) {
 
   let hostEl: Element | null = null;
   let contentEl: Element | null = null;
-  let intervalId: any = null;
 
   mount(async (self) => {
     // Render Host EINMAL
@@ -26,8 +30,7 @@ export async function Show(p: any, children: any) {
 
     //muss false sein.. weil show macht nen subtree!!!
     let visible = false;
-
-    intervalId = setInterval(async () => {
+    effect(p.when, async (b) => {
       visible = !visible;
 
       if (!visible) {
@@ -37,25 +40,11 @@ export async function Show(p: any, children: any) {
           contentEl = null;
         }
       } else {
-        // Vor erneutem Anzeigen Host leeren, falls noch Reste drinstehen
-        while (hostEl!.firstChild) {
-          const child = hostEl!.firstChild;
-          if (child instanceof Element) {
-            await destroy(child);
-          } else {
-            hostEl!.removeChild(child);
-          }
-        }
-
         // Content erneut rendern
         const { el: c } = await render(content, { parent: hostEl! });
         contentEl = c as Element;
       }
-    }, p.time ?? 5000);
-  });
-
-  unmount(() => {
-    if (intervalId !== null) clearInterval(intervalId);
+    });
   });
 
   // Show produziert seine eigene DOM-Struktur, nix rendern
