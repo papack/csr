@@ -58,7 +58,7 @@ export async function render(
   }
 
   // HOST NODE
-  const el = renderHost(node as JsxNode, ctx);
+  const el = await renderHost(node as JsxNode, ctx);
 
   const childCtx: RenderCtx = {
     ...ctx,
@@ -88,14 +88,27 @@ function renderHost(node: JsxNode, ctx: RenderCtx): HTMLElement {
   for (const [key, value] of Object.entries(props)) {
     if (key === "ctx" || key === "children") continue;
 
+    //fn
     if (key.startsWith("on") && typeof value === "function") {
       const evt = key.slice(2).toLowerCase();
       el.addEventListener(evt, value as EventListener);
       continue;
     }
 
-    if (key === "style" && typeof value === "object") {
-      Object.assign(el.style, value);
+    //style
+    if (key === "style" && value !== null && typeof value === "object") {
+      for (const [k, v] of Object.entries(
+        value as Record<string, string | any>
+      )) {
+        if (typeof v === "function") {
+          v((newValue: any) => {
+            console.log(newValue);
+            el.style.setProperty(k, newValue);
+          });
+          continue;
+        }
+        el.style.setProperty(k, v);
+      }
       continue;
     }
 

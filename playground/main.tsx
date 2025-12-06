@@ -19,6 +19,8 @@ async function Layer1() {
   const [count, setCount] = signal(0);
   const [show, setShow] = signal<boolean>(false);
 
+  const [padding, setPadding] = signal("0px");
+
   effect(count, (n) => {
     if (n % 2 === 0) {
       setShow(() => true);
@@ -28,12 +30,16 @@ async function Layer1() {
   });
 
   return (
-    <div style={{ padding: "8px", border: "2px solid blue" }}>
+    <div style={{ padding, border: "2px solid blue" }}>
       <h2>Layer 1</h2>
 
       <button
         onClick={() => {
-          setCount((prev) => prev + 1);
+          setCount((prev) => {
+            prev = prev + 1;
+            setPadding(() => `${prev}px`);
+            return prev;
+          });
         }}
       >
         {count}
