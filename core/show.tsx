@@ -22,9 +22,9 @@ export async function Show(p: ShowPropsInterface, children: any) {
   let hostEl: Element | null = null;
   let contentEl: Element | null = null;
 
-  mount(async (self) => {
+  mount(async (parent) => {
     // Render Host EINMAL
-    const { el: h } = await render(host, { parent: self });
+    const { el: h } = await render(host, { parent });
     hostEl = h as Element;
 
     //muss false sein.. weil show macht nen subtree!!!
@@ -33,14 +33,18 @@ export async function Show(p: ShowPropsInterface, children: any) {
       visible = !visible;
 
       if (!visible) {
-        // Beim Verstecken → kompletten Content zerstören
+        // Beim Verstecken => kompletten Content zerstören
         if (contentEl) {
           await destroy(contentEl);
           contentEl = null;
         }
       } else {
         // Content erneut rendern
-        const { el: c } = await render(content, { parent: hostEl! });
+        const { el: c } = await render(content, {
+          //@ts-expect-error
+          ...p.ctx,
+          parent: hostEl!,
+        });
         contentEl = c as Element;
       }
     });

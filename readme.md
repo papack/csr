@@ -1,6 +1,6 @@
-# Async UI Dom runtime (experimental)
+# @papack/csr
 
-Designed for **predictability over comfort** — which, in practice, _creates_ comfort.
+Async UI Dom runtime (experimental) .Designed for **predictability over comfort** — which, in practice, _creates_ comfort.
 No Virtual DOM. No content diffing.
 Instead: **real mutation**, **async components**, **deterministic structural updates**.
 
@@ -105,11 +105,43 @@ effect(userId, async (id) => {
 });
 ```
 
+````md
+## Context Injection
+
+`render()` accepts arbitrary values on the top-level context.  
+This context is automatically available in **every component** via `props.ctx`.
+
+```ts
+render(<App />, {
+  parent: document.body,
+  api,
+  events,
+  dummy: 42,
+});
+```
+````
+
+```ts
+function Item(p: any) {
+  console.log(p.ctx.dummy); // 42
+  p.ctx.api.fetch();
+}
+```
+
+- no providers
+- no hooks
+- no imports
+- no reactivity
+
+Context is for **stable infrastructure** (stores, APIs, event buses),
+not for frequently changing UI state.
+
+The context is immutable for the lifetime of the render tree and
+does not trigger re-renders.
+
 ## Lifecycle Primitives
 
 Lifecycle is **explicit** and **structural**.
-
----
 
 ### `mount(fn)`
 
@@ -125,8 +157,6 @@ mount((parent) => {
 - runs exactly once per component instance
 - runs after the DOM node exists
 - used for subscriptions, timers, imperative DOM work
-
----
 
 ### `unmount(fn)`
 

@@ -40,6 +40,8 @@ export function For<T extends Keyed>(p: ForProps<T>, [child]: any) {
 
         if (!nodes.has(id)) {
           const { el } = await render(child(v), {
+            //@ts-expect-error
+            ...p.ctx,
             parent: container,
           });
 

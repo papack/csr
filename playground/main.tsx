@@ -1,7 +1,7 @@
 import { effect, jsx, render, signal } from "../core";
 import { For } from "../core/for";
 
-render(<App />, { parent: document.body });
+render(<App />, { parent: document.body, dummy: 42 });
 
 function App() {
   const [value, setValue] = signal<string>("todo");
@@ -13,12 +13,7 @@ function App() {
       <ul>
         <For each={items}>
           {({ name, uuid }: any) => (
-            <Item
-              uuid={uuid}
-              name={name}
-              items={items}
-              setItems={setItems}
-            ></Item>
+            <Item uuid={uuid} name={name} items={items} setItems={setItems} />
           )}
         </For>
       </ul>
@@ -69,7 +64,7 @@ function Item(p: any) {
 
   return (
     <li>
-      {p.name} <button onClick={up}>up</button>{" "}
+      {p.ctx.dummy} {p.name} <button onClick={up}>up</button>{" "}
     </li>
   );
 }

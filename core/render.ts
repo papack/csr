@@ -3,7 +3,6 @@ import { beginComponentMountSession, endComponentMountSession } from "./mount";
 
 export interface RenderCtx {
   parent: Node & ParentNode;
-  self?: Node;
   [k: string]: any;
 }
 
