@@ -1,2 +1,3 @@
-for einbauen
-types für props und ctx einbauen
+- types einbauen für props und ctx einbauen
+- commentare cleanup
+- v0.1.0 veröffnetlichen
