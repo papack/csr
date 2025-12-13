@@ -27,9 +27,9 @@ export function signal<T>(value: T) {
   };
   read.type = "signal";
 
-  const write = async (cb: (prev: T) => T) => {
+  const write = async (cb: (prev: T) => Promise<T> | T) => {
     //get new value
-    const next: T = cb(value);
+    const next: T = await cb(value);
     value = next;
 
     //update signals

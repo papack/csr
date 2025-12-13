@@ -1,49 +1,75 @@
-import { effect, jsx, render, Show, fragment } from "../core";
-import { signal } from "../core/signal";
+import { effect, jsx, render, signal } from "../core";
+import { For } from "../core/for";
 
-// Einstiegspunkt
 render(<App />, { parent: document.body });
 
-async function App() {
+function App() {
+  const [value, setValue] = signal<string>("todo");
+  const [items, setItems] = signal<Array<{ uuid: string; name: string }>>([]);
+
   return (
     <div style={{ padding: "10px", border: "2px solid black" }}>
-      <h1>App</h1>
-      <Layer1 />
+      <h1>App {value}</h1>
+      <ul>
+        <For each={items}>
+          {({ name, uuid }: any) => (
+            <Item
+              uuid={uuid}
+              name={name}
+              items={items}
+              setItems={setItems}
+            ></Item>
+          )}
+        </For>
+      </ul>
+      <input
+        type="text"
+        value={value}
+        onInput={(e: any) => {
+          setValue(() => e.target.value);
+        }}
+      />
+      <button
+        onClick={() => {
+          setItems(async (prev) => {
+            prev.push({ uuid: crypto.randomUUID(), name: await value() });
+            setValue(() => "");
+            return prev;
+          });
+        }}
+      >
+        ok
+      </button>
     </div>
   );
 }
 
-async function Layer1() {
-  const [count, setCount] = signal(0);
-  const [show, setShow] = signal<boolean>(false);
-
-  const [padding, setPadding] = signal("0px");
-  effect(count, (n) => {
-    if (n % 2 === 0) {
-      setShow(() => true);
-    } else {
-      setShow(() => false);
-    }
+function Item(p: any) {
+  effect(p.items, (v) => {
+    console.log(v);
   });
 
-  return (
-    <>
-      <div style={{ padding, border: "2px solid blue" }}>
-        <h2>Layer 1</h2>
+  function up() {
+    p.setItems((prev: any[]) => {
+      const i = prev.findIndex((x) => x.uuid === p.uuid);
+      if (i <= 0) return prev;
+      [prev[i - 1], prev[i]] = [prev[i], prev[i - 1]];
+      return prev;
+    });
+  }
 
-        <button
-          onClick={() => {
-            setCount((prev) => {
-              prev = prev + 1;
-              setPadding(() => `${prev}px`);
-              return prev;
-            });
-          }}
-        >
-          {count}
-          <Show when={show}> Hi!</Show>
-        </button>
-      </div>
-    </>
+  function down() {
+    p.setItems((prev: any[]) => {
+      const i = prev.findIndex((x) => x.uuid === p.uuid);
+      if (i === -1 || i === prev.length - 1) return prev;
+      [prev[i], prev[i + 1]] = [prev[i + 1], prev[i]];
+      return prev;
+    });
+  }
+
+  return (
+    <li>
+      {p.name} <button onClick={up}>up</button>{" "}
+    </li>
   );
 }

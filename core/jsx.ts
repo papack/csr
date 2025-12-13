@@ -1,5 +1,7 @@
 // jsx.ts
 
+import type { RenderCtx } from "./render";
+
 declare global {
   namespace JSX {
     interface IntrinsicElements {
@@ -28,8 +30,12 @@ export interface JsxNode {
   children: JsxChild[];
 }
 
+export interface PropsInterface {
+  ctx?: RenderCtx;
+}
+
 export type ComponentFn = (
-  props: any,
+  props: PropsInterface,
   children: JsxChild[]
 ) => Promise<JsxNode>;
 

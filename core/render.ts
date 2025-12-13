@@ -85,7 +85,6 @@ export async function render(
 // ---------------------------------------------------------
 // HOST Renderer
 // ---------------------------------------------------------
-
 function renderHost(node: JsxNode, ctx: RenderCtx): HTMLElement {
   if (typeof node.tag !== "string") {
     throw new Error("Host renderer erwartet string-Tag.");
@@ -97,30 +96,54 @@ function renderHost(node: JsxNode, ctx: RenderCtx): HTMLElement {
   for (const [key, value] of Object.entries(props)) {
     if (key === "ctx" || key === "children") continue;
 
-    //fn
+    // --------------------------------------
+    // EVENTS
+    // --------------------------------------
     if (key.startsWith("on") && typeof value === "function") {
       const evt = key.slice(2).toLowerCase();
       el.addEventListener(evt, value as EventListener);
       continue;
     }
 
-    //style
+    // --------------------------------------
+    // STYLE (inkl. Signal-Werte)
+    // --------------------------------------
     if (key === "style" && value !== null && typeof value === "object") {
-      for (const [k, v] of Object.entries(
-        value as Record<string, string | any>
-      )) {
+      for (const [k, v] of Object.entries(value as Record<string, any>)) {
         if (typeof v === "function") {
+          // Signal
+          el.style.setProperty(k, v());
           v((newValue: any) => {
-            console.log(newValue);
             el.style.setProperty(k, newValue);
           });
           continue;
         }
+
         el.style.setProperty(k, v);
       }
       continue;
     }
 
+    // --------------------------------------
+    // SIGNAL PROPS (value={signal}, checked={signal}, ...)
+    // --------------------------------------
+    if (!key.startsWith("on") && typeof value === "function") {
+      // initial
+      // @ts-ignore
+      el[key] = value();
+
+      // subscribe
+      value((newValue: any) => {
+        // @ts-ignore
+        el[key] = newValue;
+      });
+
+      continue;
+    }
+
+    // --------------------------------------
+    // NORMAL PROPS / ATTRIBUTES
+    // --------------------------------------
     if (key in el) {
       // @ts-ignore
       el[key] = value;

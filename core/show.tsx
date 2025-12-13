@@ -2,7 +2,6 @@ import { jsx } from "./jsx";
 import { destroy } from "./destroy";
 import { render } from "./render";
 import { mount } from "./mount";
-import { unmount } from "./unmount";
 import type { ReadFn } from "./signal";
 import { effect } from "./effect";
 
