@@ -1,13 +1,110 @@
 // jsx.ts
-
 import type { RenderCtx } from "./render";
+import type { ReadFn } from "./signal";
+
+type EventHandler<E extends Event = Event> = (event: E) => void;
+
+interface DOMEvents {
+  onClick?: EventHandler<MouseEvent>;
+  onDblClick?: EventHandler<MouseEvent>;
+  onMouseDown?: EventHandler<MouseEvent>;
+  onMouseUp?: EventHandler<MouseEvent>;
+  onMouseMove?: EventHandler<MouseEvent>;
+  onMouseEnter?: EventHandler<MouseEvent>;
+  onMouseLeave?: EventHandler<MouseEvent>;
+
+  onKeyDown?: EventHandler<KeyboardEvent>;
+  onKeyUp?: EventHandler<KeyboardEvent>;
+  onInput?: EventHandler<InputEvent>;
+  onChange?: EventHandler<Event>;
+
+  onFocus?: EventHandler<FocusEvent>;
+  onBlur?: EventHandler<FocusEvent>;
+}
+
+interface StyleProps {
+  [key: string]: string | number | ReadFn<string | number>;
+}
+
+type MaybeSignal<T> = T | ReadFn<T>;
+
+interface HTMLAttributes extends DOMEvents {
+  id?: string;
+  class?: string;
+  className?: string;
+  title?: string;
+
+  style?: StyleProps;
+
+  value?: MaybeSignal<string | number>;
+  checked?: MaybeSignal<boolean>;
+  disabled?: MaybeSignal<boolean>;
+
+  children?: any;
+}
+
+interface SVGAttributes extends DOMEvents {
+  id?: string;
+  class?: string;
+
+  style?: StyleProps;
+
+  viewBox?: MaybeSignal<string>;
+  fill?: MaybeSignal<string>;
+  stroke?: MaybeSignal<string>;
+  strokeWidth?: MaybeSignal<number>;
+
+  d?: MaybeSignal<string>;
+  cx?: MaybeSignal<string | number>;
+  cy?: MaybeSignal<string | number>;
+  r?: MaybeSignal<string | number>;
+
+  x?: MaybeSignal<string | number>;
+  y?: MaybeSignal<string | number>;
+  width?: MaybeSignal<string | number>;
+  height?: MaybeSignal<string | number>;
+
+  children?: any;
+}
 
 declare global {
   namespace JSX {
+    type Element = JsxNode;
+
     interface IntrinsicElements {
-      [elem: string]: any;
+      // HTML
+      div: HTMLAttributes;
+      li: HTMLAttributes;
+      ul: HTMLAttributes;
+      h1: HTMLAttributes;
+      h2: HTMLAttributes;
+      h3: HTMLAttributes;
+      h4: HTMLAttributes;
+      h5: HTMLAttributes;
+      h6: HTMLAttributes;
+      span: HTMLAttributes;
+      p: HTMLAttributes;
+      button: HTMLAttributes;
+      input: HTMLAttributes & {
+        type?: string;
+        placeholder?: string;
+      };
+      textarea: HTMLAttributes;
+      form: HTMLAttributes;
+      label: HTMLAttributes;
+
+      // SVG
+      svg: SVGAttributes;
+      path: SVGAttributes;
+      circle: SVGAttributes;
+      rect: SVGAttributes;
+      g: SVGAttributes;
+      line: SVGAttributes;
+      polyline: SVGAttributes;
+      polygon: SVGAttributes;
+      text: SVGAttributes;
+      tspan: SVGAttributes;
     }
-    type Element = any;
   }
 }
 
@@ -70,6 +167,5 @@ function normalizeChild(input: any): JsxChild | JsxChild[] {
     return input.flatMap(normalizeChild);
   }
 
-  // muss ein JsxNode sein
   return input;
 }

@@ -66,7 +66,7 @@ export async function render(
 
   // HOST NODE
 
-  const el = renderHost(node as JsxNode, ctx);
+  const el = await renderHost(node as JsxNode, ctx);
 
   const childCtx: RenderCtx = {
     ...ctx,
@@ -84,66 +84,109 @@ export async function render(
 // ---------------------------------------------------------
 // HOST Renderer
 // ---------------------------------------------------------
-function renderHost(node: JsxNode, ctx: RenderCtx): HTMLElement {
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+const SVG_TAGS = new Set([
+  "svg",
+  "path",
+  "circle",
+  "rect",
+  "line",
+  "polyline",
+  "polygon",
+  "g",
+  "defs",
+  "linearGradient",
+  "radialGradient",
+  "stop",
+  "mask",
+  "clipPath",
+  "pattern",
+  "text",
+  "tspan",
+  "use",
+  "symbol",
+  "view",
+  "ellipse",
+  "foreignObject",
+]);
+
+async function renderHost(node: JsxNode, ctx: RenderCtx): Promise<Element> {
   if (typeof node.tag !== "string") {
     throw new Error("Host renderer erwartet string-Tag.");
   }
 
-  const el = document.createElement(node.tag);
+  const tag = node.tag;
+  const isSvg = SVG_TAGS.has(tag);
+
+  const el = isSvg
+    ? document.createElementNS(SVG_NS, tag)
+    : document.createElement(tag);
+
   const props = node.props || {};
 
   for (const [key, value] of Object.entries(props)) {
     if (key === "ctx" || key === "children") continue;
 
-    // --------------------------------------
+    // --------------------
     // EVENTS
-    // --------------------------------------
+    // --------------------
     if (key.startsWith("on") && typeof value === "function") {
       const evt = key.slice(2).toLowerCase();
       el.addEventListener(evt, value as EventListener);
       continue;
     }
 
-    // --------------------------------------
-    // STYLE (inkl. Signal-Werte)
-    // --------------------------------------
-    if (key === "style" && value !== null && typeof value === "object") {
+    // --------------------
+    // STYLE (Signals erlaubt)
+    // --------------------
+    if (key === "style" && value && typeof value === "object") {
       for (const [k, v] of Object.entries(value as Record<string, any>)) {
-        if (typeof v === "function") {
-          // Signal
-          el.style.setProperty(k, v());
-          v((newValue: any) => {
-            el.style.setProperty(k, newValue);
-          });
-          continue;
-        }
+        if (typeof v === "function" && v.type === "signal") {
+          const initial = await v();
+          el.style.setProperty(k, String(initial));
 
-        el.style.setProperty(k, v);
+          await v(async (nv: any) => {
+            el.style.setProperty(k, String(nv));
+          });
+        } else {
+          el.style.setProperty(k, String(v));
+        }
       }
       continue;
     }
 
-    // --------------------------------------
-    // SIGNAL PROPS (value={signal}, checked={signal}, ...)
-    // --------------------------------------
-    if (!key.startsWith("on") && typeof value === "function") {
-      // initial
-      // @ts-ignore
-      el[key] = value();
+    // --------------------
+    // SIGNAL PROPS (HTML + SVG)
+    // --------------------
+    //@ts-ignore
+    if (typeof value === "function" && value.type === "signal") {
+      const initial = await value();
 
-      // subscribe
-      value((newValue: any) => {
+      if (isSvg) {
+        el.setAttribute(key, String(initial));
+
+        await value(async (nv: any) => {
+          el.setAttribute(key, String(nv));
+        });
+      } else {
         // @ts-ignore
-        el[key] = newValue;
-      });
+        el[key] = initial;
 
+        await value(async (nv: any) => {
+          // @ts-ignore
+          el[key] = nv;
+        });
+      }
       continue;
     }
 
-    // --------------------------------------
-    // NORMAL PROPS / ATTRIBUTES
-    // --------------------------------------
-    if (key in el) {
+    // --------------------
+    // NORMAL PROPS
+    // --------------------
+    if (isSvg) {
+      el.setAttribute(key, String(value));
+    } else if (key in el) {
       // @ts-ignore
       el[key] = value;
     } else {
