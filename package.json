@@ -1,12 +1,26 @@
 {
-  "name": "bubu",
-  "module": "index.ts",
-  "type": "module",
-  "private": true,
-  "devDependencies": {
-    "@types/bun": "latest"
+  "name": "@papack/csr",
+  "description": "Async UI Dom runtime",
+  "version": "0.0.0",
+  "author": "Matthias Steiner",
+  "repository": "github:papack/csr",
+  "homepage": "https://github.com/papack/csr",
+  "publishConfig": {
+    "access": "public"
   },
-  "peerDependencies": {
-    "typescript": "^5"
+  "module": "dist/index.mjs",
+  "main": "./dist/index.cjs",
+  "types": "./dist/index.d.mts",
+  "license": "MIT",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsdown"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "tsdown": "^0.16.8"
   }
 }
