@@ -243,9 +243,3 @@ Why:
   <User />
 </Show>
 ```
-
-### Behavior
-
-- creates a stable host once
-- renders the subtree when signal is `true`
-- fully destroys it when signal is `false`

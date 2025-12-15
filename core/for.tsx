@@ -5,7 +5,7 @@ import { destroy } from "./destroy";
 import type { ReadFn } from "./signal";
 
 /**
- * For rendert nur arrays mit objs die mind 1 id haben!!!
+ * For only renders arrays with objs that have a uuid
  */
 
 type Uuid = string;
@@ -53,7 +53,7 @@ export function For<T extends Keyed>(p: ForProps<T>, [child]: any) {
         }
       }
 
-      // REMOVE (mit destroy)
+      // REMOVE (and destroy)
       for (const id of order) {
         if (!nextOrder.includes(id)) {
           const el = nodes.get(id);

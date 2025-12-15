@@ -3,11 +3,9 @@ import { registerUnmount } from "./mount";
 
 export type { UnmountCallback } from "./mount";
 
-/**
- * In Components aufrufen, um Cleanup für diese Component zu registrieren.
- * Die tatsächliche Verknüpfung mit dem Root-Element passiert
- * in endComponentMountSession().
- */
+// Call this inside components to register cleanup logic for the component.
+// The actual association with the component root DOM element
+// happens in endComponentMountSession().
 export function unmount(cb: UnmountCallback): void {
   registerUnmount(cb);
 }

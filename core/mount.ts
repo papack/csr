@@ -1,30 +1,27 @@
 export type MountCallback = (el: Element) => void | Promise<void>;
 export type UnmountCallback = () => void | Promise<void>;
 
-// Pro Component: gesammelte mount/unmount-Callbacks
+// Stack of mount/unmount callback queues per component render
 const mountStack: MountCallback[][] = [];
 const unmountStack: UnmountCallback[][] = [];
 
-/**
- * Vom Renderer aufgerufen, bevor eine Component-Funktion ausgeführt wird.
- */
+// Called by the renderer before a component function is executed.
+// Initializes a new mount/unmount session for that component.
 export function beginComponentMountSession(): void {
   mountStack.push([]);
   unmountStack.push([]);
 }
 
-/**
- * Vom Renderer aufgerufen, nachdem der DOM-Root der Component bekannt ist.
- * - führt alle mount-Callbacks aus
- * - hängt alle unmount-Callbacks am Root-Element an
- */
+// Called by the renderer once the component's DOM root element is known.
+// - Executes all registered mount callbacks
+// - Attaches all unmount callbacks to the root element
 export function endComponentMountSession(el: Element): void {
   const mounts = mountStack.pop();
   const unmounts = unmountStack.pop();
 
   if (!mounts || !unmounts) return;
 
-  // Mounts ausführen (fire & forget)
+  // Execute mount callbacks (fire-and-forget)
   for (const cb of mounts) {
     try {
       const r = cb(el);
@@ -36,7 +33,7 @@ export function endComponentMountSession(el: Element): void {
     }
   }
 
-  // Unmounts am Element speichern (DOM-first)
+  // Store unmount callbacks on the element (DOM-first lifecycle)
   if (unmounts.length > 0) {
     const store = (el as any).__unmountCbs as UnmountCallback[] | undefined;
     if (store && Array.isArray(store)) {
@@ -47,32 +44,26 @@ export function endComponentMountSession(el: Element): void {
   }
 }
 
-/**
- * In Components aufrufen, um "onMount" zu registrieren.
- */
+//Used inside components to register an on-mount callback.
 export function mount(cb: MountCallback): void {
   const queue = mountStack[mountStack.length - 1];
   if (!queue) {
-    throw new Error("mount(cb) wurde außerhalb einer Component aufgerufen.");
+    throw new Error("mount(cb) was called outside of a component.");
   }
   queue.push(cb);
 }
 
-/**
- * Wird von unmount(cb) verwendet, um Cleanup in die aktuelle Session zu legen.
- */
+// Used internally to register cleanup logic for the current component session.
 export function registerUnmount(cb: UnmountCallback): void {
   const queue = unmountStack[unmountStack.length - 1];
   if (!queue) {
-    throw new Error("unmount(cb) wurde außerhalb einer Component aufgerufen.");
+    throw new Error("unmount(cb) was called outside of a component.");
   }
   queue.push(cb);
 }
 
-/**
- * Vom destroy()-Pfad verwendet:
- * führt alle am Element registrierten Unmount-Callbacks aus (LIFO).
- */
+// Used by the destroy() path:
+// Executes all unmount callbacks registered on the element (LIFO order).
 export async function runUnmountsForElement(el: Element): Promise<void> {
   const list = (el as any).__unmountCbs as UnmountCallback[] | undefined;
   if (!list || list.length === 0) return;

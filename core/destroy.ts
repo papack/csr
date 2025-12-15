@@ -40,7 +40,3 @@ async function destroyChild(node: Node): Promise<void> {
     node.parentNode.removeChild(node);
   }
 }
-
-// ggf. wie vorher als Barrel weiterreichen:
-export * from "./jsx";
-export * from "./render";

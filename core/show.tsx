@@ -23,23 +23,24 @@ export async function Show(p: ShowPropsInterface, children: any) {
   let contentEl: Element | null = null;
 
   mount(async (parent) => {
-    // Render Host EINMAL
+    // Render ONE Host
     const { el: h } = await render(host, { parent });
     hostEl = h as Element;
 
-    //muss false sein.. weil show macht nen subtree!!!
+    //init visible must be true.
+    //let effect decide
     let visible = false;
     effect(p.when, async (b) => {
       visible = !visible;
 
       if (!visible) {
-        // Beim Verstecken => kompletten Content zerstören
+        // on "hide". Destroy the whole tree
         if (contentEl) {
           await destroy(contentEl);
           contentEl = null;
         }
       } else {
-        // Content erneut rendern
+        // render the whole tree
         const { el: c } = await render(content, {
           //@ts-expect-error
           ...p.ctx,
@@ -50,6 +51,6 @@ export async function Show(p: ShowPropsInterface, children: any) {
     });
   });
 
-  // Show produziert seine eigene DOM-Struktur, nix rendern
+  // Show produce his own structure, an MUST return nothing
   return null;
 }

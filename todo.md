@@ -1,3 +1,0 @@
-- types einbauen für props und ctx einbauen
-- commentare cleanup
-- v0.1.0 veröffnetlichen

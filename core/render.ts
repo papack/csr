@@ -81,9 +81,7 @@ export async function render(
   return { el };
 }
 
-// ---------------------------------------------------------
 // HOST Renderer
-// ---------------------------------------------------------
 const SVG_NS = "http://www.w3.org/2000/svg";
 
 const SVG_TAGS = new Set([
@@ -128,18 +126,14 @@ async function renderHost(node: JsxNode, ctx: RenderCtx): Promise<Element> {
   for (const [key, value] of Object.entries(props)) {
     if (key === "ctx" || key === "children") continue;
 
-    // --------------------
     // EVENTS
-    // --------------------
     if (key.startsWith("on") && typeof value === "function") {
       const evt = key.slice(2).toLowerCase();
       el.addEventListener(evt, value as EventListener);
       continue;
     }
 
-    // --------------------
-    // STYLE (Signals erlaubt)
-    // --------------------
+    // STYLE (allow Signals)
     if (key === "style" && value && typeof value === "object") {
       for (const [k, v] of Object.entries(value as Record<string, any>)) {
         if (typeof v === "function" && v.type === "signal") {
@@ -156,9 +150,7 @@ async function renderHost(node: JsxNode, ctx: RenderCtx): Promise<Element> {
       continue;
     }
 
-    // --------------------
     // SIGNAL PROPS (HTML + SVG)
-    // --------------------
     //@ts-ignore
     if (typeof value === "function" && value.type === "signal") {
       const initial = await value();
@@ -181,9 +173,7 @@ async function renderHost(node: JsxNode, ctx: RenderCtx): Promise<Element> {
       continue;
     }
 
-    // --------------------
     // NORMAL PROPS
-    // --------------------
     if (isSvg) {
       el.setAttribute(key, String(value));
     } else if (key in el) {
@@ -198,35 +188,25 @@ async function renderHost(node: JsxNode, ctx: RenderCtx): Promise<Element> {
   return el;
 }
 
-// ---------------------------------------------------------
 // TEXT Renderer
-// ---------------------------------------------------------
-
 function renderText(node: JsxText, ctx: RenderCtx): Text {
   const t = document.createTextNode(node.value);
   ctx.parent.appendChild(t);
   return t;
 }
 
-// ---------------------------------------------------------
 // SIGNAL Renderer
-// ---------------------------------------------------------
-
 async function renderSignal(node: JsxSignal, ctx: RenderCtx): Promise<Text> {
-  const t = document.createTextNode("");
-  ctx.parent.appendChild(t);
+  const el = document.createTextNode("");
+  ctx.parent.appendChild(el);
 
-  await node.value(async (v: any) => {
-    changeText(t, String(v));
+  await node.value(async (value: any) => {
+    if (el instanceof Text) {
+      el.nodeValue = String(value);
+    } else {
+      throw "svg not implemented with number and string";
+    }
   });
 
-  return t;
-}
-
-function changeText(el: Text, value: string | number) {
-  if (el instanceof Text) {
-    el.nodeValue = String(value);
-  } else {
-    throw "svg not implemented with number and string";
-  }
+  return el;
 }
