@@ -68,7 +68,7 @@ interface SVGAttributes extends DOMEvents {
 
 declare global {
   namespace JSX {
-    type Element = JsxNode;
+    type Element = JsxNode | null | Promise<null>;
 
     interface IntrinsicElements {
       // HTML
