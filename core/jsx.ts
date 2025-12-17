@@ -68,7 +68,10 @@ interface SVGAttributes extends DOMEvents {
 
 declare global {
   namespace JSX {
-    type Element = JsxNode | null | Promise<null>;
+    type Element = JsxNode | Promise<JsxNode> | null | Promise<null>;
+    interface ElementType {
+      (props: any, ...children: any[]): any;
+    }
 
     interface IntrinsicElements {
       // HTML
@@ -133,7 +136,7 @@ export interface PropsInterface {
 export type ComponentFn = (
   props: PropsInterface,
   children: JsxChild[]
-) => Promise<JsxNode>;
+) => JsxNode | null;
 
 // 1) JSX sammelt nur Struktur
 export function jsx(

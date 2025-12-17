@@ -11,9 +11,11 @@ export interface RenderResult {
 }
 
 export async function render(
-  node: JsxChild,
+  node: JsxChild | Promise<JsxChild> | null | Promise<null>,
   ctx: RenderCtx
 ): Promise<RenderResult> {
+  node = await node;
+
   //nothing
   if (node == null) {
     return { el: ctx.parent };

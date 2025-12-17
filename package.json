@@ -1,7 +1,7 @@
 {
   "name": "@papack/csr",
   "description": "Async UI Dom runtime",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "author": "Matthias Steiner",
   "repository": "github:papack/csr",
   "homepage": "https://github.com/papack/csr",
