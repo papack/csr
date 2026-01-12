@@ -66,6 +66,15 @@ class Connector implements ConnectorInterface {
   }
 
   public removeTopic(uuid: UUID) {
+    const listeners = this.topic.get(uuid);
+    if (listeners) {
+      for (const cb of listeners) {
+        const mappedUuid = this.clbkMapping.get(cb);
+        if (mappedUuid === uuid) {
+          this.clbkMapping.delete(cb);
+        }
+      }
+    }
     this.topic.delete(uuid);
   }
 
@@ -80,16 +89,24 @@ class Connector implements ConnectorInterface {
   public removeClbk<T>(uuid: UUID, cb: (value: T) => void) {
     const listeners = this.topic.get(uuid);
     if (!listeners) return;
+
     listeners.delete(cb);
+
+    const mappedUuid = this.clbkMapping.get(cb);
+    if (mappedUuid === uuid) {
+      this.clbkMapping.delete(cb);
+    }
   }
 
   public update<T>(uuid: UUID, value: T) {
     const listeners = this.topic.get(uuid);
     if (!listeners) return;
+
     for (const listener of listeners) {
       listener(value);
     }
   }
+
   public getUuidByClbk(fn: (value: unknown) => void) {
     const uuid = this.clbkMapping.get(fn);
     if (!uuid) {
@@ -98,4 +115,5 @@ class Connector implements ConnectorInterface {
     return uuid;
   }
 }
+
 export const connector = new Connector();
