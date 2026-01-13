@@ -1,9 +1,14 @@
+//mount.ts
 export type MountCallback = (el: Element) => void | Promise<void>;
 export type UnmountCallback = () => void | Promise<void>;
 
 // Stack of mount/unmount callback queues per component render
 const mountStack: MountCallback[][] = [];
 const unmountStack: UnmountCallback[][] = [];
+
+export function hasActiveMountSession(): boolean {
+  return mountStack.length > 0;
+}
 
 // Called by the renderer before a component function is executed.
 // Initializes a new mount/unmount session for that component.

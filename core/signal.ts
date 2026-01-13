@@ -1,4 +1,4 @@
-import { unmount } from "./unmount";
+//signal.ts
 type UUID = string;
 
 export type ReadFn<T> = ((
@@ -11,31 +11,19 @@ export function signal<T>(value: T) {
   const uuid = crypto.randomUUID();
   connector.addTopic(uuid);
 
-  unmount(() => {
-    connector.removeTopic(uuid);
-  });
-
   const read: ReadFn<T> = async (cb?: (v: unknown) => Promise<void>) => {
     if (cb) {
       connector.registerClbk(uuid, cb);
-      unmount(() => {
-        connector.removeClbk(uuid, cb);
-      });
       await cb(value);
     }
     return value;
   };
+
   read.type = "signal";
 
-  const write = async (cb: (prev: T) => Promise<T> | T) => {
-    //get new value
-    const next: T = await cb(value);
-    value = next;
-
-    //update signals
-    if (connector) {
-      connector.update(uuid, next);
-    }
+  const write = async (fn: (prev: T) => T | Promise<T>) => {
+    value = await fn(value);
+    connector.update(uuid, value);
   };
 
   return [read, write] as const;

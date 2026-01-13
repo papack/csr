@@ -1,3 +1,4 @@
+//for.ts
 import { effect } from "./effect";
 import { mount } from "./mount";
 import { render } from "./render";

@@ -1,3 +1,4 @@
+//jsx.ts
 import type { RenderCtx } from "./render";
 import type { ReadFn } from "./signal";
 

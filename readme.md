@@ -243,3 +243,48 @@ Why:
   <User />
 </Show>
 ```
+
+## Routing
+
+Routing is modeled as **explicit application state**, not URLs or links.
+
+`useRouter()` exposes the current route as a signal and a `navigate()` function.
+Structural rendering is derived explicitly using `effect` and `Show`.
+
+```ts
+const { route, navigate } = useRouter();
+
+const [isHome, setIsHome] = signal(false);
+const [isSettings, setIsSettings] = signal(false);
+
+// derive structure from route
+effect(route, (r) => {
+  setIsHome(() => r === "home");
+  setIsSettings(() => r === "settings");
+});
+
+// set initial route
+mount(() => {
+  navigate("home");
+});
+
+return (
+  <div>
+    <button onClick={() => navigate("home")}>Home</button>
+    <button onClick={() => navigate("settings")}>Settings</button>
+
+    <Show when={isHome}>
+      <Home />
+    </Show>
+
+    <Show when={isSettings}>
+      <Settings />
+    </Show>
+  </div>
+);
+```
+
+- routing is **state**, not navigation
+- no URLs, no links, no magic
+- `effect` derives structure
+- `Show` controls existence
