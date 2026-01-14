@@ -6,5 +6,4 @@ export * from "./shadow";
 export * from "./size";
 export * from "./space";
 export * from "./style";
-export * from "./weight";
 export * from "./z-index";
