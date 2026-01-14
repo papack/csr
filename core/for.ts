@@ -1,15 +1,13 @@
-//for.ts
+// for.ts
 import { effect } from "./effect";
-import { mount } from "./mount";
+import { mount } from "./lifecycle";
 import { render } from "./render";
 import { destroy } from "./destroy";
 import type { ReadFn } from "./signal";
-
-/**
- * For only renders arrays with objs that have a uuid
- */
+import { jsx } from "./jsx";
 
 type Uuid = string;
+
 interface Keyed {
   uuid: Uuid;
 }
@@ -19,63 +17,63 @@ interface ForProps<T extends Keyed> {
 }
 
 export function For<T extends Keyed>(p: ForProps<T>, [child]: any) {
-  // EIN Container
-  const container = document.createElement("div");
+  const container = jsx("csr-for-host", { style: { display: "contents" } });
 
   mount((parent) => {
-    parent.appendChild(container);
+    const { el } = render(container, { parent });
+    const host = el as Element;
 
     const nodes = new Map<Uuid, Element>();
     let order: Uuid[] = [];
 
-    effect(p.each, async (values) => {
+    function reconcile(values: T[]) {
       const nextOrder: Uuid[] = [];
 
-      // ADD + KEEP
-      for (let i = 0; i < values.length; i++) {
-        const v = values[i];
+      for (const v of values) {
         if (!v || v.uuid == null) continue;
 
         const id = v.uuid;
         nextOrder.push(id);
 
         if (!nodes.has(id)) {
-          const { el } = await render(child(v), {
-            //@ts-expect-error
-            ...p.ctx,
-            parent: container,
+          const { el } = render(child(v), {
+            ...(p as any).ctx,
+            parent: host,
           });
 
           if (!(el instanceof Element)) {
-            throw new Error("For: Child-Root muss ein Element sein");
+            throw new Error("For: child root must be an Element");
           }
 
           nodes.set(id, el);
         }
       }
 
-      // REMOVE (and destroy)
+      // remove
       for (const id of order) {
         if (!nextOrder.includes(id)) {
           const el = nodes.get(id);
-          if (el) {
-            await destroy(el);
-          }
+          if (el) destroy(el);
           nodes.delete(id);
         }
       }
 
-      // REORDER
+      // reorder
       let anchor: ChildNode | null = null;
       for (let i = nextOrder.length - 1; i >= 0; i--) {
-        const id = nextOrder[i];
-        const el = nodes.get(id!)!;
-        container.insertBefore(el, anchor);
+        const el = nodes.get(nextOrder[i]!)!;
+        host.insertBefore(el, anchor);
         anchor = el;
       }
 
       order = nextOrder;
-    });
+    }
+
+    // initial render (sync, explicit)
+    reconcile(p.each());
+
+    // reactive updates
+    effect(p.each, reconcile);
   });
 
   return null;

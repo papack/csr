@@ -1,50 +1,101 @@
 # @papack/csr
 
-Async UI Dom runtime (experimental) .Designed for **predictability over comfort** — which, in practice, _creates_ comfort.
-No Virtual DOM. No content diffing.
-Instead: **real mutation**, **async components**, **deterministic structural updates**.
+**Experimental synchronous UI DOM runtime.**
+Designed for **simplicity, explicitness, and predictability**.
 
-Zero dependencies. Fully TypeScript.
+> **No feature is the feature.**
+
+No Virtual DOM.
+No diffing.
+No scheduler.
+No hidden async.
+
+Just **real DOM**, **real mutation**, and **deterministic structure** with zero dependencies.
+
+---
+
+## Philosophy
+
+This library is **simple by design**, not “easy”.
+
+- There is **one way** to do things
+- Everything is **explicit**
+
+It _is_ optimized for **clarity and long-term maintenance**.
+
+---
 
 ## Features
 
-- Async components (`await` directly inside components)
-- Deterministic rendering without a Virtual DOM
-- `signal` / `effect` as minimal reactivity primitives
-- Explicit lifecycle (`mount`, `unmount`, `destroy`)
-- Keyed `For` with stable DOM identity
-- Structural conditional rendering (`Show`)
-- Mutation is allowed (by design)
-- Fully TypeScript
+- Fully **synchronous rendering**
+- No Virtual DOM, no reconciliation
+- Minimal reactivity via `signal` / `effect`
+- Explicit lifecycle (`mount`, `unmount`)
+- Structural primitives (`Show`, `For`)
+
+---
 
 ## Core Ideas
 
-- **Async components are first-class**
+### Signals are active state
 
-  ```ts
-  async function User() {
-    const data = await fetch("/api/user").then((r) => r.json());
-    return <div>{data.name}</div>;
-  }
-  ```
+Signals are **sources**, not values.
 
-- **Signals are active sources**
+```ts
+const [count, setCount] = signal(0);
 
-  - no reference equality checks
-  - mutation is allowed
-  - every `set()` reliably triggers effects
+setCount((v) => v + 1);
+setCount(() => 42);
+```
 
-- **Lifecycle is bound to real DOM nodes**
+- no equality checks
+- no dependency tracking
+- mutation is allowed
+- every write notifies every subscriber
 
-  - `mount` / `unmount` attach to actual elements
-  - for: reordering ≠ remounting
-  - removal = real `destroy`
+### Effects are explicit reactions to signals
+
+```ts
+effect(count, (value) => {
+  console.log(value);
+});
+```
+
+Characteristics:
+
+- runs immediately with the current value
+- runs on **every** write
+- only one singal, no dependency arrays
+- async callbacks are allowed (fire-and-forget)
+
+> Effects are **not awaited**.
+> Concurrency is explicit and intentional.
+
+### Lifecycle is bound to real DOM
+
+Lifecycle is structural, not conceptual.
+
+```ts
+mount((parent) => {
+  // runs once, when the root DOM element exists
+});
+
+unmount(() => {
+  // guaranteed cleanup before removal
+});
+```
+
+- lifecycle is attached to **actual DOM nodes**
+- children unmount before parents
+- removal means real `destroy`
+
+---
 
 ## Example
 
 ```ts
-import { jsx, render, signal } from "../core";
-import { For } from "../core/for";
+import { render, signal } from "@papack/csr";
+import { For } from "@papack/csr/for";
 
 const [items, setItems] = signal([
   { uuid: "a", name: "A" },
@@ -62,162 +113,65 @@ function App() {
 }
 ```
 
----
+## Structural Rendering
 
-## `signal`
+### `Show`
 
-Signals are **active state containers**, not passive values.
-
-```ts
-const [count, setCount] = signal(0);
-
-setCount((v) => v + 1);
-setCount(() => 42);
-```
-
-### Properties
-
-- `set()` **always triggers**
-- no equality checks
-- mutation is allowed
-- async setters are allowed
-
-## `effect(readFn, callback)`
-
-Subscribes to a signal and reacts to changes.
+Controls **existence**, not visibility.
 
 ```ts
-effect(count, (value) => {
-  console.log(value);
-});
+<Show when={visible}>
+  <User />
+</Show>
 ```
 
-### Characteristics
+- when `false`, the subtree is destroyed
+- when `true`, it is rendered fresh
+- lifecycle runs correctly on both transitions
 
-- runs immediately with the current value
-- runs on **every** `set()`
-- no dependency tracking
-- async callbacks supported
+### `For` (intentionally restricted)
 
-```ts
-effect(userId, async (id) => {
-  const user = await fetch(`/api/user/${id}`).then((r) => r.json());
-});
-```
+`For` is a **keyed structural renderer**, not a generic iterator.
 
-````md
-## Context Injection
+Rules:
 
-`render()` accepts arbitrary values on the top-level context.  
-This context is automatically available in **every component** via `props.ctx`.
-
-```ts
-render(<App />, {
-  parent: document.body,
-  api,
-  events,
-  dummy: 42,
-});
-```
-````
-
-```ts
-function Item(p: any) {
-  console.log(p.ctx.dummy); // 42
-  p.ctx.api.fetch();
-}
-```
-
-- no providers
-- no hooks
-- no imports
-- no reactivity
-
-Context is for **stable infrastructure** (stores, APIs, event buses),
-not for frequently changing UI state.
-
-The context is immutable for the lifetime of the render tree and
-does not trigger re-renders.
-
-## Lifecycle Primitives
-
-Lifecycle is **explicit** and **structural**.
-
-### `mount(fn)`
-
-Registers a callback that runs **once**, when the component’s root DOM element
-is attached.
-
-```ts
-mount((parent) => {
-  // parent === root Element
-});
-```
-
-- runs exactly once per component instance
-- runs after the DOM node exists
-- used for subscriptions, timers, imperative DOM work
-
-### `unmount(fn)`
-
-Registers cleanup logic tied to the component’s root element.
-
-```ts
-unmount(() => {
-  // cleanup
-});
-```
-
-- runs exactly once
-- runs before DOM removal
-- children unmount before parents
-- guaranteed execution
-
-## `For` (intentionally restricted)
-
-`For` is **not** a general iterator.
-It is a **keyed structural renderer**.
-
-### Rules
-
-- `each` **must** bet an array
-- each item **must** be an object
-- each object **must** have a stable key field (e.g. `uuid`)
-- no fallbacks, no warnings
+- `each` must be an array
+- each item must be an object
+- each item must have a stable key (`uuid`)
+- no fallbacks, no heuristics
 
 ```ts
 type Item = {
-  uuid: string; // required
+  uuid: string;
   [key: string]: any;
 };
 ```
 
-### What `For` does
+What `For` does:
 
 - detects:
 
+  - additions
+  - removals
   - order changes
-  - added items
-  - removed items
 
 - performs:
 
   - DOM moves (`insertBefore`)
-  - rendering **only** for new keys
+  - rendering only for new keys
   - `destroy()` for removed keys
 
-### What `For` does **not** do
+What `For` does **not** do:
 
 - no content diffing
 - no re-rendering existing items
 - no prop patching
-- no heuristic matching
 
 > If an item’s content changes, the item itself must be reactive.
 
 ---
 
-## Mutation: allowed
+## Mutation is allowed
 
 ```ts
 setItems((prev) => {
@@ -230,61 +184,33 @@ This is **correct**.
 
 Why:
 
-- `signal` is active
-- effects are not reference-based
-- `For` evaluates only keys and order
-
-## `Show` (structural conditional rendering)
-
-`Show` controls **existence**, not visibility.
-
-```ts
-<Show when={visible}>
-  <User />
-</Show>
-```
+- signals are active
+- updates are not reference-based
+- `For` only cares about keys and order
 
 ## Routing
 
-Routing is modeled as **explicit application state**, not URLs or links.
-
-`useRouter()` exposes the current route as a signal and a `navigate()` function.
-Structural rendering is derived explicitly using `effect` and `Show`.
+Routing is **just application state**.
 
 ```ts
-const { route, navigate } = useRouter();
+const [route, setRoute] = signal("home");
+```
 
-const [isHome, setIsHome] = signal(false);
-const [isSettings, setIsSettings] = signal(false);
+Structure is derived explicitly:
 
-// derive structure from route
+```ts
 effect(route, (r) => {
   setIsHome(() => r === "home");
   setIsSettings(() => r === "settings");
 });
-
-// set initial route
-mount(() => {
-  navigate("home");
-});
-
-return (
-  <div>
-    <button onClick={() => navigate("home")}>Home</button>
-    <button onClick={() => navigate("settings")}>Settings</button>
-
-    <Show when={isHome}>
-      <Home />
-    </Show>
-
-    <Show when={isSettings}>
-      <Settings />
-    </Show>
-  </div>
-);
 ```
 
-- routing is **state**, not navigation
-- no URLs, no links, no magic
-- `effect` derives structure
-- `Show` controls existence
+```tsx
+<Show when={isHome}>
+  <Home />
+</Show>
+
+<Show when={isSettings}>
+  <Settings />
+</Show>
+```

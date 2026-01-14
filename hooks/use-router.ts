@@ -3,7 +3,7 @@ import { signal } from "../core";
 
 type Route = string;
 
-const [route, setRoute] = signal<Route>("default");
+const [route, setRoute] = signal<Route>("/");
 
 window.addEventListener("popstate", (e: PopStateEvent) => {
   const r = e.state?.route;
@@ -14,6 +14,7 @@ window.addEventListener("popstate", (e: PopStateEvent) => {
 
 export function useRouter() {
   const navigate = (to: Route) => {
+    if (to === route()) return;
     history.pushState({ route: to }, "");
     setRoute(() => to);
   };

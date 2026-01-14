@@ -1,30 +1,32 @@
-import { runUnmountsForElement } from "./mount";
+// destroy.ts
 
-export async function destroy(root: Element): Promise<void> {
+import { runUnmountsForElement } from "./lifecycle";
+
+export function destroy(root: Element): void {
   const children = Array.from(root.childNodes);
 
   for (const child of children) {
-    await destroyChild(child);
+    destroyChild(child);
   }
 
-  await runUnmountsForElement(root);
+  runUnmountsForElement(root);
 
   if (root.parentNode) {
     root.parentNode.removeChild(root);
   } else {
-    root.remove(); // Element hat remove()
+    root.remove();
   }
 }
 
-async function destroyChild(node: Node): Promise<void> {
+function destroyChild(node: Node): void {
   if (node instanceof Element) {
-    const kids = Array.from(node.childNodes);
+    const children = Array.from(node.childNodes);
 
-    for (const k of kids) {
-      await destroyChild(k);
+    for (const child of children) {
+      destroyChild(child);
     }
 
-    await runUnmountsForElement(node);
+    runUnmountsForElement(node);
 
     if (node.parentNode) {
       node.parentNode.removeChild(node);
@@ -35,7 +37,7 @@ async function destroyChild(node: Node): Promise<void> {
     return;
   }
 
-  // Text/Comment etc.
+  // Text, Comment, etc.
   if (node.parentNode) {
     node.parentNode.removeChild(node);
   }

@@ -1,22 +1,36 @@
 // effect.ts
 import type { ReadFn } from "./signal";
-import { unmount } from "./unmount";
+import { unmount, hasActiveMountSession } from "./lifecycle";
 import { connector } from "./signal";
-import { hasActiveMountSession } from "./mount";
 
-export async function effect<T>(
+export function effect<T>(
   readFn: ReadFn<T>,
-  fn: (value: T) => Promise<unknown> | unknown
-): Promise<void> {
-  // EIN stabiler Callback
-  const cb = async (val: unknown) => {
-    await fn(val as T);
+  fn: (value: T) => void | Promise<void>
+): void {
+  let initialized = false;
+
+  const cb = (val: T) => {
+    if (!initialized) {
+      initialized = true;
+      return;
+    }
+
+    try {
+      const r = fn(val);
+      if (r instanceof Promise) {
+        r.catch((err) => {
+          console.error("effect async callback failed", err);
+        });
+      }
+    } catch (err) {
+      console.error("effect callback failed", err);
+    }
   };
 
-  // registriert GENAU diesen Callback
-  await readFn(cb);
+  // subscribe (initial call is ignored)
+  readFn(cb);
 
-  // nur wenn wir Owner sind
+  // cleanup
   if (hasActiveMountSession()) {
     unmount(() => {
       const uuid = connector.getUuidByClbk(cb);

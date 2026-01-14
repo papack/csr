@@ -1,8 +1,19 @@
-import type { ComponentFn, JsxNode, JsxChild, JsxText, JsxSignal } from "./jsx";
-import { beginComponentMountSession, endComponentMountSession } from "./mount";
+// render.ts
+// Fully synchronous renderer.
+// Signal subscriptions are ref-counted and cleaned up via lifecycle unmount.
+
+import type { JsxNode, VElement, VText, VSignal, ComponentFn } from "./jsx";
+import {
+  beginMountSession,
+  endMountSession,
+  unmount,
+  hasActiveMountSession,
+} from "./lifecycle";
+import { connector } from "./signal";
 
 export interface RenderCtx {
   parent: Node & ParentNode;
+  self?: Node;
   [k: string]: any;
 }
 
@@ -10,65 +21,56 @@ export interface RenderResult {
   el: Node;
 }
 
-export async function render(
-  node: JsxChild | Promise<JsxChild> | null | Promise<null>,
-  ctx: RenderCtx
-): Promise<RenderResult> {
-  node = await node;
-
-  //nothing
+export function render(node: JsxNode | null, ctx: RenderCtx): RenderResult {
   if (node == null) {
     return { el: ctx.parent };
   }
 
-  //fragement recursive
+  // FRAGMENT
   if (Array.isArray(node)) {
-    for (const item of node) {
-      return await render(item, ctx);
+    let last: Node = ctx.parent;
+
+    for (const child of node) {
+      const r = render(child, ctx);
+      last = r.el;
     }
+
+    return { el: last };
   }
 
-  // TEXT NODE
+  // TEXT
   if (node.kind === "text") {
-    const el = renderText(node as JsxText, ctx);
+    const el = renderText(node as VText, ctx);
     return { el };
   }
 
-  //SIGNAL
+  // SIGNAL (text binding)
   if (node.kind === "signal") {
-    const el = await renderSignal(node as JsxSignal, ctx);
+    const el = renderSignal(node as VSignal, ctx);
     return { el };
   }
 
-  // COMPONENT NODE
-  if (node.kind === "component") {
-    const fn = node.tag as ComponentFn;
+  // COMPONENT
+  if (typeof (node as VElement).tag === "function") {
+    const vnode = node as VElement;
+    const fn = vnode.tag as ComponentFn;
 
-    // Mount/Unmount-Session für diese Component
-    beginComponentMountSession();
+    beginMountSession();
 
-    // Component-Funktion ausführen
-    const resolved = await fn({ ...node.props, ctx }, node.children);
+    const resolved = fn({ ...vnode.props, ctx }, vnode.children);
+    const result = render(resolved, ctx);
 
-    // gerenderten Output rendern
-    const result = await render(resolved, ctx);
-
-    // Mounts ausführen und Unmounts am Root-Element registrieren
-    if (result.el instanceof Element) {
-      endComponentMountSession(result.el);
-    } else {
-      console.warn(
-        "Component-Root ist kein Element. Mount/Unmount werden ignoriert."
-      );
+    if (!(result.el instanceof Element)) {
+      throw new Error("Component root must be a DOM Element");
     }
 
+    endMountSession(result.el);
     ctx.self = result.el;
     return result;
   }
 
-  // HOST NODE
-
-  const el = await renderHost(node as JsxNode, ctx);
+  // HOST
+  const el = renderHost(node as VElement, ctx);
 
   const childCtx: RenderCtx = {
     ...ctx,
@@ -76,14 +78,17 @@ export async function render(
     self: ctx.self,
   };
 
-  for (const child of (node as JsxNode).children) {
-    await render(child, childCtx);
+  for (const child of (node as VElement).children) {
+    render(child, childCtx);
   }
 
   return { el };
 }
 
-// HOST Renderer
+/* ------------------------------------------------------------
+ * Host rendering
+ * ------------------------------------------------------------ */
+
 const SVG_NS = "http://www.w3.org/2000/svg";
 
 const SVG_TAGS = new Set([
@@ -111,9 +116,9 @@ const SVG_TAGS = new Set([
   "foreignObject",
 ]);
 
-async function renderHost(node: JsxNode, ctx: RenderCtx): Promise<Element> {
+function renderHost(node: VElement, ctx: RenderCtx): Element {
   if (typeof node.tag !== "string") {
-    throw new Error("Host renderer erwartet string-Tag.");
+    throw new Error("Host renderer expects string tag");
   }
 
   const tag = node.tag;
@@ -123,7 +128,7 @@ async function renderHost(node: JsxNode, ctx: RenderCtx): Promise<Element> {
     ? document.createElementNS(SVG_NS, tag)
     : document.createElement(tag);
 
-  const props = node.props || {};
+  const props = node.props ?? {};
 
   for (const [key, value] of Object.entries(props)) {
     if (key === "ctx" || key === "children") continue;
@@ -135,43 +140,36 @@ async function renderHost(node: JsxNode, ctx: RenderCtx): Promise<Element> {
       continue;
     }
 
-    // STYLE (allow Signals)
+    // STYLE (supports signals)
     if (key === "style" && value && typeof value === "object") {
       for (const [k, v] of Object.entries(value as Record<string, any>)) {
         if (typeof v === "function" && v.type === "signal") {
-          const initial = await v();
-          el.style.setProperty(k, String(initial));
+          const initial = v();
+          (el.style as any)[k] = String(initial);
 
-          await v(async (nv: any) => {
-            el.style.setProperty(k, String(nv));
+          v((nv: any) => {
+            (el.style as any)[k] = String(nv);
           });
         } else {
-          el.style.setProperty(k, String(v));
+          (el.style as any)[k] = String(v);
         }
       }
       continue;
     }
 
-    // SIGNAL PROPS (HTML + SVG)
-    //@ts-ignore
+    // SIGNAL PROPS
     if (typeof value === "function" && value.type === "signal") {
-      const initial = await value();
-
-      if (isSvg) {
-        el.setAttribute(key, String(initial));
-
-        await value(async (nv: any) => {
+      const apply = (nv: any) => {
+        if (isSvg) {
           el.setAttribute(key, String(nv));
-        });
-      } else {
-        // @ts-ignore
-        el[key] = initial;
-
-        await value(async (nv: any) => {
+        } else {
           // @ts-ignore
           el[key] = nv;
-        });
-      }
+        }
+      };
+
+      apply(value());
+      bindSignal(value, apply);
       continue;
     }
 
@@ -190,25 +188,57 @@ async function renderHost(node: JsxNode, ctx: RenderCtx): Promise<Element> {
   return el;
 }
 
-// TEXT Renderer
-function renderText(node: JsxText, ctx: RenderCtx): Text {
+/* ------------------------------------------------------------
+ * Text & Signal rendering
+ * ------------------------------------------------------------ */
+
+function renderText(node: VText, ctx: RenderCtx): Text {
   const t = document.createTextNode(node.value);
   ctx.parent.appendChild(t);
   return t;
 }
 
-// SIGNAL Renderer
-async function renderSignal(node: JsxSignal, ctx: RenderCtx): Promise<Text> {
-  const el = document.createTextNode("");
-  ctx.parent.appendChild(el);
+function renderSignal(node: VSignal, ctx: RenderCtx): Text {
+  const t = document.createTextNode("");
+  ctx.parent.appendChild(t);
 
-  await node.value(async (value: any) => {
-    if (el instanceof Text) {
-      el.nodeValue = String(value);
-    } else {
-      throw "svg not implemented with number and string";
-    }
-  });
+  const cb = (v: any) => {
+    t.nodeValue = String(v);
+  };
 
-  return el;
+  // initial
+  t.nodeValue = String(node.read());
+
+  // subscribe
+  node.read(cb);
+
+  // cleanup via lifecycle (ref-count aware)
+  if (hasActiveMountSession()) {
+    unmount(() => {
+      const uuid = connector.getUuidByClbk(cb);
+      connector.removeClbk(uuid, cb);
+    });
+  }
+
+  return t;
+}
+
+/* ------------------------------------------------------------
+ * Shared signal binding helper
+ * ------------------------------------------------------------ */
+
+function bindSignal<T>(
+  read: (cb?: (value: T) => void) => T,
+  apply: (value: T) => void
+): void {
+  const cb = (v: any) => apply(v as T);
+
+  read(cb);
+
+  if (hasActiveMountSession()) {
+    unmount(() => {
+      const uuid = connector.getUuidByClbk(cb);
+      connector.removeClbk(uuid, cb);
+    });
+  }
 }
