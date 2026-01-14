@@ -3,6 +3,16 @@ import type { ReadFn } from "./signal";
 
 export type JsxNode = VElement | VText | VSignal;
 
+declare global {
+  namespace JSX {
+    type Element = any;
+
+    interface IntrinsicElements {
+      [key: string]: any;
+    }
+  }
+}
+
 export interface VElement {
   kind: "element";
   tag: string | ComponentFn;
