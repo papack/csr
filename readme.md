@@ -63,8 +63,8 @@ effect(count, (value) => {
 
 Characteristics:
 
-- runs immediately with the current value
-- runs on **every** write
+- NOT runs immediately on mount
+- only runs on **every** write to the signal
 - only one singal, no dependency arrays
 - async callbacks are allowed (fire-and-forget)
 
