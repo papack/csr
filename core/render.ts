@@ -143,6 +143,8 @@ function renderHost(node: VElement, ctx: RenderCtx): Element {
     // STYLE (supports signals)
     if (key === "style" && value && typeof value === "object") {
       for (const [k, v] of Object.entries(value as Record<string, any>)) {
+        if (v === undefined) continue;
+
         if (typeof v === "function" && v.type === "signal") {
           const initial = v();
           (el.style as any)[k] = String(initial);
@@ -229,7 +231,7 @@ function renderSignal(node: VSignal, ctx: RenderCtx): Text {
 
 function bindSignal<T>(
   read: (cb?: (value: T) => void) => T,
-  apply: (value: T) => void
+  apply: (value: T) => void,
 ): void {
   const cb = (v: any) => apply(v as T);
 

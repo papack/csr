@@ -94,8 +94,7 @@ unmount(() => {
 ## Example
 
 ```ts
-import { render, signal } from "@papack/csr";
-import { For } from "@papack/csr/for";
+import { render, signal, for } from "@papack/csr";
 
 const [items, setItems] = signal([
   { uuid: "a", name: "A" },
@@ -150,13 +149,11 @@ type Item = {
 What `For` does:
 
 - detects:
-
   - additions
   - removals
   - order changes
 
 - performs:
-
   - DOM moves (`insertBefore`)
   - rendering only for new keys
   - `destroy()` for removed keys
