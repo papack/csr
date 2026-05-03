@@ -1,7 +1,7 @@
 {
   "name": "@papack/csr",
   "description": "CSR UI Dom runtime",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "author": "Matthias Steiner",
   "repository": "github:papack/csr",
   "homepage": "https://github.com/papack/csr",

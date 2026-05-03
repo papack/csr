@@ -6,7 +6,7 @@ import { destroy } from "./destroy";
 import type { ReadFn } from "./signal";
 import { jsx } from "./jsx";
 
-type Uuid = string & { readonly __brand?: "uuid" };
+type Uuid = string;
 
 interface Keyed {
   uuid: Uuid;

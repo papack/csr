@@ -4,7 +4,7 @@ import type { ReadFn } from "../core/signal";
 
 export type SessionStorageHook<T> = [
   value: ReadFn<T>,
-  setValue: (next: T) => void,
+  setValue: (updater: (prev: T) => T) => void,
   remove: () => void,
 ];
 
@@ -12,7 +12,6 @@ export function useSessionStorage<T>(
   key: string,
   initial: T,
 ): SessionStorageHook<T> {
-  // Resolve initial value from sessionStorage or fallback
   let start = initial;
 
   try {
@@ -26,13 +25,28 @@ export function useSessionStorage<T>(
 
   const [value, write] = signal<T>(start);
 
-  function setValue(next: T) {
-    try {
-      sessionStorage.setItem(key, JSON.stringify(next));
-    } catch (err) {
-      console.error(`[useSessionStorage] Failed to write key "${key}"`, err);
-    }
-    write(() => next);
+  function setValue(updater: (prev: T) => T) {
+    write((prev) => {
+      let next: T;
+
+      try {
+        next = updater(prev);
+      } catch (err) {
+        console.error(
+          `[useSessionStorage] Updater failed for key "${key}"`,
+          err,
+        );
+        return prev;
+      }
+
+      try {
+        sessionStorage.setItem(key, JSON.stringify(next));
+      } catch (err) {
+        console.error(`[useSessionStorage] Failed to write key "${key}"`, err);
+      }
+
+      return next;
+    });
   }
 
   function remove() {
@@ -41,6 +55,7 @@ export function useSessionStorage<T>(
     } catch (err) {
       console.error(`[useSessionStorage] Failed to remove key "${key}"`, err);
     }
+
     write(() => initial);
   }
 
