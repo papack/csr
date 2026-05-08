@@ -185,20 +185,72 @@ Why:
 - updates are not reference-based
 - `For` only cares about keys and order
 
-## Routing
+## Router
 
-Routing is **just application state**.
+Routing is based on the real browser URL.
+
+The runtime provides small explicit URL primitives:
+
+- `useUrlPath()`
+- `useUrlParam(key)`
+- `useUrlHash()`
+- `useNavigate()`
+
+Example:
 
 ```ts
-const [route, setRoute] = signal("home");
+const [path] = useUrlPath();
+const [tab] = useUrlParam("tab");
+const [hash] = useUrlHash();
+
+const { navigate } = useNavigate();
 ```
 
-Structure is derived explicitly:
+Navigation is explicit:
 
 ```ts
-effect(route, (r) => {
-  setIsHome(() => r === "home");
-  setIsSettings(() => r === "settings");
+navigate("/settings?tab=profile#security");
+```
+
+Or external:
+
+```ts
+navigate("https://google.com");
+```
+
+### URL parts are independent
+
+`setPath()` only updates the pathname.
+
+Existing search params and hash are preserved.
+
+```ts
+setPath("/dashboard");
+```
+
+`setHash()` only updates the hash.
+
+```ts
+setHash("#profile");
+```
+
+`setParam()` only updates one query parameter.
+
+```ts
+setTab("security");
+```
+
+### Routing
+
+Structure is derived explicitly from URL state.
+
+```ts
+const [isHome, setIsHome] = signal(false);
+const [isSettings, setIsSettings] = signal(false);
+
+effect(path, (value) => {
+  setIsHome(() => value === "/");
+  setIsSettings(() => value === "/settings");
 });
 ```
 
