@@ -16,7 +16,7 @@ export type Data = {
  * Creates a translation function `t`
  * that returns a reactive signal per key.
  */
-export function useTranslation(locale: ReadFn<string>, text: Translations) {
+export function useText(locale: ReadFn<string>, text: Translations) {
   return function t(key: string, data?: Data): ReadFn<string> {
     const compute = () => resolve(key, locale(), text, data);
 
@@ -46,7 +46,7 @@ function resolve(
   key: string,
   locale: string,
   text: Translations,
-  data?: Data
+  data?: Data,
 ): string {
   const entry = text[key];
   if (!entry) return replacePlaceholders(key, data);
