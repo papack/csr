@@ -4,7 +4,7 @@ import { signal, type ReadFn } from "../core/signal";
 type WriteFn<T> = (value: T | ((prev: T) => T)) => void;
 
 function getHash(): string {
-  return window.location.hash || "";
+  return window.location.hash.slice(1); //without leading "#"
 }
 
 const [hash, write] = signal<string>(getHash());
