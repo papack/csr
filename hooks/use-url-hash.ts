@@ -10,7 +10,10 @@ function getHash(): string {
 const [hash, write] = signal<string>(getHash());
 
 function sync() {
-  write(() => getHash());
+  const next = getHash();
+  if (next !== hash()) {
+    write(() => next);
+  }
 }
 
 window.addEventListener("hashchange", sync);

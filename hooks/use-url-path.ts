@@ -10,7 +10,11 @@ function getPath(): string {
 const [path, write] = signal<string>(getPath());
 
 window.addEventListener("popstate", () => {
-  write(() => getPath());
+  const next = getPath();
+
+  if (next !== path()) {
+    write(() => next);
+  }
 });
 
 function setPath(value: string | ((prev: string) => string)) {
@@ -25,7 +29,9 @@ function setPath(value: string | ((prev: string) => string)) {
 
     window.history.pushState(null, "", url);
 
-    write(() => getPath());
+    if (pathname !== path()) {
+      write(() => pathname);
+    }
   }
 }
 

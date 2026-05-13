@@ -10,7 +10,11 @@ function getParams() {
 const [params, write] = signal(getParams());
 
 window.addEventListener("popstate", () => {
-  write(() => getParams());
+  const next = getParams();
+
+  if (next.toString() !== params().toString()) {
+    write(() => next);
+  }
 });
 
 function getValue(key: string): string {
@@ -23,6 +27,10 @@ function setParam(key: string, value: string | ((prev: string) => string)) {
   const prev = current.get(key) ?? "";
 
   const next = typeof value === "function" ? value(prev) : value;
+
+  if (next === prev) {
+    return;
+  }
 
   if (next === "") {
     current.delete(key);
@@ -37,21 +45,34 @@ function setParam(key: string, value: string | ((prev: string) => string)) {
 
   window.history.pushState(null, "", url);
 
-  write(() => new URLSearchParams(current));
+  if (current.toString() !== params().toString()) {
+    write(() => new URLSearchParams(current));
+  }
 }
 
 export function useUrlParam(key: string): [ReadFn<string>, WriteFn<string>] {
   const [value, setValue] = signal<string>(getValue(key));
 
   const sync = () => {
-    setValue(() => getValue(key));
+    const next = getValue(key);
+
+    if (next !== value()) {
+      setValue(() => next);
+    }
   };
 
   window.addEventListener("popstate", sync);
 
   const writeValue: WriteFn<string> = (next) => {
+    const prev = value();
+
     setParam(key, next);
-    setValue(() => getValue(key));
+
+    const current = getValue(key);
+
+    if (current !== prev) {
+      setValue(() => current);
+    }
   };
 
   return [value, writeValue];
