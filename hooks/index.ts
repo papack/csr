@@ -1,5 +1,6 @@
 export * from "./use-breakpoint";
 export * from "./use-custom-event";
+export * from "./use-intersection-observer";
 export * from "./use-local-storage";
 export * from "./use-locale";
 export * from "./use-navigate";
