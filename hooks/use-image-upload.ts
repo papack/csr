@@ -3,42 +3,92 @@ import { signal } from "../core";
 interface UseImageUploadOptions {
   maxWidth: number;
   maxHeight: number;
-  upload: (file: File) => Promise<void>;
 }
 export function useImageUpload(o: UseImageUploadOptions) {
   // signals
+  const [file, setFile] = signal<File | null>(null);
   const [previewUrl, setPreviewUrl] = signal<string>("");
-  const [error, setError] = signal<string>("");
-  const hasImage = signal<string>("");
-  const hasError = signal<string>("");
-  const [isProcessing, setIsProcessing] = signal(false);
-  const [isUploading, setIsUploading] = signal(false);
-  const [isProcessed, setIsProcessed] = signal(false);
-  const [isUploaded, setIsUploaded] = signal(false);
+  const [hasFile, setHasFile] = signal<boolean>(false);
+  const [isRunning, setIsRunning] = signal(false);
+  const [isDone, setisDone] = signal(true);
 
-  //functions
-  function select() {
-    // - auto resize
-    // - auto respect aspect ratio
-    // - auto Qualitiy paramters
-    // - auto exif stripping
-    // - auto compression
-    // - auto webp conversion
+  //select::
+  async function select() {
+    setIsRunning(() => true);
+    setisDone(() => false);
+    try {
+      //select file
+      const f = await selectFile();
+      if (!f) throw new Error("NO_FILE_SELECTED");
+
+      //only images allowed
+      if (!f.type.startsWith("image/")) {
+        throw new Error("INVALID_FILE_TYPE");
+      }
+
+      //set raw file
+      setFile(() => f);
+      setHasFile(() => true);
+
+      //TODO
+      // - auto resize
+      // - auto respect aspect ratio
+      // - auto Qualitiy paramters
+      // - auto exif stripping
+      // - auto compression
+      // - auto webp conversion
+
+      //preview url
+      const dataUrl = await fileToDataUrl(f);
+      setPreviewUrl(() => dataUrl);
+    } catch {
+    } finally {
+      setIsRunning(() => false);
+      setisDone(() => true);
+    }
   }
-  function upload() {}
-  function clear() {}
+  function clear() {
+    setHasFile(() => false);
+    setPreviewUrl(() => "");
+    setFile(() => null);
+  }
 
   return {
+    file,
     previewUrl,
-    error,
-    hasImage,
-    hasError,
-    isProcessing,
-    isUploading,
-    isProcessed,
-    isUploaded,
+    hasFile,
+    isProcessing: isRunning,
+    isProcessed: isDone,
     select,
-    upload,
     clear,
   };
+}
+
+function selectFile(): Promise<File | null> {
+  return new Promise((res) => {
+    const input = document.createElement("input");
+
+    input.type = "file";
+    input.accept = "image/*";
+
+    input.onchange = () => {
+      res(input.files?.[0] ?? null);
+    };
+
+    input.click();
+  });
+}
+
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((res, rej) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      res(reader.result as string);
+    };
+
+    reader.onerror = rej;
+
+    reader.readAsDataURL(file);
+  });
 }
