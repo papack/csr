@@ -2,7 +2,6 @@ import { signal } from "../core";
 
 interface UseImageUploadOptions {
   maxWidth: number;
-  maxHeight: number;
 }
 export function useImageUpload(o: UseImageUploadOptions) {
   // signals
@@ -18,28 +17,23 @@ export function useImageUpload(o: UseImageUploadOptions) {
     setisDone(() => false);
     try {
       //select file
-      const f = await selectFile();
-      if (!f) throw new Error("NO_FILE_SELECTED");
+      const rawImageFile = await selectFile();
+      if (!rawImageFile) throw new Error("NO_FILE_SELECTED");
 
       //only images allowed
-      if (!f.type.startsWith("image/")) {
+      if (!rawImageFile.type.startsWith("image/")) {
         throw new Error("INVALID_FILE_TYPE");
       }
 
+      //resize
+      const resizedImageFile = await resizeImage(rawImageFile, o.maxWidth);
+
       //set raw file
-      setFile(() => f);
+      setFile(() => resizedImageFile);
       setHasFile(() => true);
 
-      //TODO
-      // - auto resize
-      // - auto respect aspect ratio
-      // - auto Qualitiy paramters
-      // - auto exif stripping
-      // - auto compression
-      // - auto webp conversion
-
       //preview url
-      const dataUrl = await fileToDataUrl(f);
+      const dataUrl = await fileToDataUrl(resizedImageFile);
       setPreviewUrl(() => dataUrl);
     } catch {
     } finally {
@@ -90,5 +84,44 @@ function fileToDataUrl(file: File): Promise<string> {
     reader.onerror = rej;
 
     reader.readAsDataURL(file);
+  });
+}
+
+async function resizeImage(
+  file: File,
+  maxWidth = 800,
+  quality = 0.85,
+): Promise<File> {
+  const img = await createImageBitmap(file);
+
+  const scale = Math.min(1, maxWidth / img.width);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = img.width * scale;
+  canvas.height = img.height * scale;
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("No Context!");
+
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+  const blob = await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) {
+          reject(new Error("Image conversion failed"));
+          return;
+        }
+
+        resolve(blob);
+      },
+      "image/jpeg",
+      quality,
+    );
+  });
+
+  return new File([blob], file.name.replace(/\.\w+$/, ".jpg"), {
+    type: "image/jpeg",
+    lastModified: Date.now(),
   });
 }
