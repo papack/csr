@@ -8,12 +8,13 @@ declare global {
 
 type UsePaypalOptions = {
   sandbox?: boolean;
+  currency?: string;
 };
 
 let paypalPromise: Promise<PayPalNamespace> | null = null;
 
 export function usePaypal(clientId: string, options: UsePaypalOptions = {}) {
-  const { sandbox = true } = options;
+  const { sandbox = true, currency = "EUR" } = options;
 
   async function loadPaypal(): Promise<PayPalNamespace> {
     if (window.paypal) {
@@ -31,7 +32,7 @@ export function usePaypal(clientId: string, options: UsePaypalOptions = {}) {
         ? "https://www.sandbox.paypal.com"
         : "https://www.paypal.com";
 
-      script.src = `${base}/sdk/js?client-id=${clientId}`;
+      script.src = `${base}/sdk/js?client-id=${clientId}&currency=${currency}`;
 
       script.async = true;
 
