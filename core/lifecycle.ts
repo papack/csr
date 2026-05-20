@@ -67,12 +67,14 @@ export function unmount(cb: UnmountCallback): void {
 }
 
 export function runUnmountsForElement(el: Element): void {
-  const list = (el as any).__unmountCbs as UnmountCallback[] | undefined;
-  if (!list || list.length === 0) return;
+  const list = (el as any)?.__unmountCbs as UnmountCallback[] | undefined;
+  if (!Array.isArray(list) || list.length === 0) {
+    return;
+  }
 
   for (let i = list.length - 1; i >= 0; i--) {
     try {
-      const r = list[i]!();
+      const r = list[i]?.();
       if (r instanceof Promise) {
         r.catch((err) => console.error("async unmount callback failed", err));
       }
