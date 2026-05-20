@@ -5,6 +5,7 @@ export * from "./use-intersection-observer";
 export * from "./use-local-storage";
 export * from "./use-locale";
 export * from "./use-navigate";
+export * from "./use-paypal";
 export * from "./use-session-storage";
 export * from "./use-text";
 export * from "./use-url-hash";

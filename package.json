@@ -22,5 +22,8 @@
   "devDependencies": {
     "@types/bun": "latest",
     "tsdown": "^0.16.8"
+  },
+  "dependencies": {
+    "@paypal/paypal-js": "^9.7.0"
   }
 }
