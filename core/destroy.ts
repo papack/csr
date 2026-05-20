@@ -1,5 +1,4 @@
 // destroy.ts
-
 import { runUnmountsForElement } from "./lifecycle";
 
 export function destroy(root: Element): void {
@@ -11,10 +10,10 @@ export function destroy(root: Element): void {
 
   runUnmountsForElement(root);
 
-  if (root.parentNode) {
-    root.parentNode.removeChild(root);
-  } else {
-    root.remove();
+  try {
+    root.parentNode?.removeChild(root);
+  } catch (err) {
+    console.warn("failed to remove root node", err, root);
   }
 }
 
@@ -28,17 +27,19 @@ function destroyChild(node: Node): void {
 
     runUnmountsForElement(node);
 
-    if (node.parentNode) {
-      node.parentNode.removeChild(node);
-    } else {
-      node.remove();
+    try {
+      node.parentNode?.removeChild(node);
+    } catch (err) {
+      console.warn("failed to remove element node", err, node);
     }
 
     return;
   }
 
   // Text, Comment, etc.
-  if (node.parentNode) {
-    node.parentNode.removeChild(node);
+  try {
+    node.parentNode?.removeChild(node);
+  } catch (err) {
+    console.warn("failed to remove node", err, node);
   }
 }
