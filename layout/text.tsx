@@ -1,5 +1,5 @@
 import { jsx } from "../core/jsx";
-import type { DOMAttrs, DOMEvents } from "../core/dom";
+import type { DOMAttrs, DOMEvents, MaybeSignal, CSSValue } from "../core/dom";
 
 /**
  * Text component
@@ -20,55 +20,55 @@ export interface TextPropertiesInterface extends DOMAttrs, DOMEvents {
   // ─────────────────────────────
 
   /** Text alignment */
-  a?: "left" | "right" | "center" | "justify";
+  a?: MaybeSignal<"left" | "right" | "center" | "justify">;
 
   /** Font family */
-  ff?: string;
+  ff?: MaybeSignal<CSSValue>;
 
   /** Font weight */
-  fw?: number;
+  fw?: MaybeSignal<CSSValue>;
 
   /** Font size */
-  fs?: string;
+  fs?: MaybeSignal<CSSValue>;
 
   /** Line height */
-  lh?: string;
+  lh?: MaybeSignal<CSSValue>;
 
   /** Letter spacing */
-  ls?: string;
+  ls?: MaybeSignal<CSSValue>;
 
   /** Font style */
-  s?: "normal" | "italic";
+  s?: MaybeSignal<"normal" | "italic">;
 
   /** Text color */
-  c?: string;
+  c?: MaybeSignal<CSSValue>;
 
   // ─────────────────────────────
   // Spacing – Margin
   // ─────────────────────────────
 
-  m?: string;
-  mb?: string;
-  ml?: string;
-  mr?: string;
-  mt?: string;
-  mx?: string;
-  my?: string;
+  m?: MaybeSignal<CSSValue>;
+  mb?: MaybeSignal<CSSValue>;
+  ml?: MaybeSignal<CSSValue>;
+  mr?: MaybeSignal<CSSValue>;
+  mt?: MaybeSignal<CSSValue>;
+  mx?: MaybeSignal<CSSValue>;
+  my?: MaybeSignal<CSSValue>;
 
   // ─────────────────────────────
   // Spacing – Padding
   // ─────────────────────────────
 
-  p?: string;
-  pb?: string;
-  pl?: string;
-  pr?: string;
-  pt?: string;
-  px?: string;
-  py?: string;
+  p?: MaybeSignal<CSSValue>;
+  pb?: MaybeSignal<CSSValue>;
+  pl?: MaybeSignal<CSSValue>;
+  pr?: MaybeSignal<CSSValue>;
+  pt?: MaybeSignal<CSSValue>;
+  px?: MaybeSignal<CSSValue>;
+  py?: MaybeSignal<CSSValue>;
 
   /** Background */
-  bg?: string;
+  bg?: MaybeSignal<CSSValue>;
 }
 
 export function Text(p: TextPropertiesInterface, children: any[]) {
@@ -103,6 +103,6 @@ export function Text(p: TextPropertiesInterface, children: any[]) {
         background: p.bg,
       },
     },
-    ...children
+    ...children,
   );
 }
