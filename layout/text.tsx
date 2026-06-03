@@ -101,6 +101,7 @@ export function Text(p: TextPropertiesInterface, children: any[]) {
         paddingTop: p.pt ?? p.py ?? p.p,
 
         background: p.bg,
+        ...p.style,
       },
     },
     ...children,
